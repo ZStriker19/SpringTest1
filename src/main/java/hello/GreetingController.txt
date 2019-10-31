@@ -1,0 +1,147 @@
+//this holds all of the code for the opentracing and automatic instrumentation first steps. Everything before exercise 4 of the java lab
+package hello;
+
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+
+import datadog.trace.api.DDTags;
+
+import io.opentracing.Scope;
+import io.opentracing.Tracer;
+import io.opentracing.util.GlobalTracer;
+
+
+@RestController
+public class GreetingController {
+
+    @Value("#{environment['sleeptime'] ?: '2000'}")
+    private long sleepTime;
+
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    HttpServletRequest request;
+
+    private static final Logger logger = LoggerFactory.getLogger(GreetingController.class);
+
+
+    private  String doSomeStuff(String somestring) throws InterruptedException {
+        String helloStr = String.format("Hello, %s!", somestring);
+        Thread.sleep(sleepTime);
+        return helloStr;
+    }
+
+    private void doSomeOtherStuff(String somestring) throws InterruptedException {
+        System.out.println(somestring);
+        Thread.sleep(sleepTime);
+    }
+
+    private  float multiplyBy12(Float num) throws InterruptedException {
+        num = num * 12;
+        System.out.print(num);
+        Thread.sleep(sleepTime);
+        return num;
+    }
+
+
+
+    @RequestMapping("/ServiceC")
+    public String serviceC(HttpServletRequest request) throws InterruptedException {
+        //my map I'm creating for testing my own code:
+        Map<String, String> map_test_z = new HashMap<>();
+
+        Enumeration headerNames = request.getHeaderNames();
+
+        while (headerNames.hasMoreElements()) {
+            String key = (String) headerNames.nextElement();
+            String value = request.getHeader(key);
+            System.out.print(key + "\n" + value + "\n");
+            map_test_z.put(key, value);
+        }
+
+        //we now have this map_test_z map in case I want to add headers e.g curl --header "name: zach" localhost:9393/ServiceC
+
+        //testing stops here
+
+        Tracer tracer = GlobalTracer.get();
+
+        try (Scope scope = tracer.buildSpan("ServiceC").startActive(true)) {
+            scope.span().setTag(DDTags.SERVICE_NAME, "springtest0");
+            logger.info("In Service C *************** this is cool");
+            Thread.sleep(50L);
+
+            try (Scope scope1 = tracer.buildSpan("multiplyBy12").asChildOf(scope.span()).startActive(true)) {
+                scope1.span().setTag(DDTags.SERVICE_NAME, "springtest0");
+                multiplyBy12((float) 23.3);
+            }
+
+            Thread.sleep(250L);
+
+            try (Scope scope2 = tracer.buildSpan("doSomeStuff").asChildOf(scope.span()).startActive(true)) {
+                scope2.span().setTag(DDTags.SERVICE_NAME, "springtest0");
+                doSomeStuff("how about this");
+
+                try (Scope scope3 = tracer.buildSpan("doSomeOtherStuff").asChildOf(scope2.span()).startActive(true)) {
+                    scope3.span().setTag(DDTags.SERVICE_NAME, "springtest0");
+                    Thread.sleep(150L);
+                    doSomeOtherStuff(doSomeStuff("\n how about this"));
+                }
+            }
+
+
+        }
+
+
+        //try (Scope scope1 = tracer.buildSpan("<name of the span >").asChildOf(scope.span()).startActive(true)) {}
+
+
+        // Hashmap containing Header key/val
+        Map<String, String> map = new HashMap<>();
+        //build HttpHeader
+        HttpHeaders header = new HttpHeaders();
+        header.setAll(map);
+
+
+
+        //Post to downstream service
+        String rs = restTemplate.postForEntity("http://localhost:9393/ServiceD", new HttpEntity(header), String.class).getBody();
+
+        return rs;
+    }
+
+
+    @RequestMapping("/ServiceD")
+    public String serviceD() throws InterruptedException {
+
+        Enumeration<String> e = request.getHeaderNames();
+        Map<String, String> spanMap = new HashMap<>();
+
+        while (e.hasMoreElements()) {
+            // add the names of the request headers into the spanMap
+            String key = e.nextElement();
+            String value = request.getHeader(key);
+            spanMap.put(key, value);
+        }
+
+        Thread.sleep(230L);
+
+        return "Service D\n";
+    }
+
+
+}

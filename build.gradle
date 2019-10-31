@@ -1,0 +1,42 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.5.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+bootJar {
+    baseName = 'springtest1'
+    version =  '1.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+test {
+    exclude '**/*'
+}
+
+
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web")
+    compile("com.google.collections:google-collections:1.0")
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile('com.jayway.jsonpath:json-path')
+    compile group: 'io.opentracing', name: 'opentracing-api', version: "0.31.0"
+    compile group: 'io.opentracing', name: 'opentracing-util', version: "0.31.0"
+    compile group: 'com.datadoghq', name: 'dd-trace-ot', version: "0.32.0"
+}
