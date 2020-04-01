@@ -34,6 +34,7 @@ test {
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("com.google.collections:google-collections:1.0")
+ //   compile ("com.squareup.okhttp:okhttp:2.5.0")
     testCompile('org.springframework.boot:spring-boot-starter-test')
     testCompile('com.jayway.jsonpath:json-path')
     compile group: 'io.opentracing', name: 'opentracing-api', version: "0.31.0"

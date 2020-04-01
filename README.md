@@ -3,10 +3,10 @@
 
 
 
-command to run with auto tracing:  `java -javaagent:./dd-java-agent.jar -Ddd.service.name=springtest0 -jar build/libs/springtest0-1.0.jar --server.port=9393
-`
+command to run with auto tracing:  
+java -javaagent:./dd-java-agent.jar -Ddd.service.name=springtest1 -jar build/libs/springtest1-1.0.jar --server.port=9393
 
-we now have this map_test_z map in case I want to add headers e.g `curl --header "name: zach" localhost:9393/ServiceC`
+we now have this map_test_z map in case I want to add headers e.g `curl --header "name: zach" localhost:9390/ServiceC`
 
 Side note: I also installed the latest tracer version and deleted the on that came with the project
 
